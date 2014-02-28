@@ -67,7 +67,6 @@ public class HashScript extends AbstractSearchScript {
     public Object run() {
         // First we get field using doc lookup
         ScriptDocValues docValue = (ScriptDocValues) doc().get(fieldName);
-        Object o = (ScriptDocValues) source().put("hash", "test");
         // Check if field exists
         if (docValue != null && !docValue.isEmpty()) {
             try {

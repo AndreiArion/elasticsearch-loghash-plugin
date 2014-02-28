@@ -11,6 +11,8 @@ import static org.hamcrest.Matchers.equalTo;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -31,6 +33,7 @@ public class HashScriptTests extends AbstractSearchScriptTests {
                 .startObject("properties")
                 .startObject("name").field("type", "string").endObject()
                 .startObject("number").field("type", "integer").endObject()
+.startObject("hash").field("type", "string").endObject()
                 .endObject().endObject().endObject()
                 .string();
         
@@ -66,11 +69,15 @@ public class HashScriptTests extends AbstractSearchScriptTests {
                 .setSize(10)
                 .addSort("number", SortOrder.ASC)
                 .execute().actionGet();
-        
+        BulkRequestBuilder bulkRequestBuilder = client().prepareBulk();
+        bulkRequestBuilder.add(client().prepareUpdate("test", "type", "12").setScript("ctx._source.hash=\"TODO\";"));
+        BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();
+
         assertNoFailures(searchResponse);
 
         // There should be 25 prime numbers between 0 and 100
         assertHitCount(searchResponse, 25);
+
 
         // Verify that they are indeed prime numbers
         for (int i = 0; i < 10; i++) {
@@ -78,6 +85,7 @@ public class HashScriptTests extends AbstractSearchScriptTests {
         }
 
         // Check certainty parameter - with certainty == 0, it should return all numbers, but only if numbers are present
+
         searchResponse = client().prepareSearch("test")
                 .setQuery(filteredQuery(matchAllQuery(),
                                         scriptFilter("hash").lang("native").addParam("field", "number")
